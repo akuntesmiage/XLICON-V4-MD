@@ -1,23 +1,36 @@
-FROM node:lts
+# Use Node.js LTS based on Debian Buster
+FROM node:lts-buster
 
-# Install dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg imagemagick webp && apt-get clean
+# Update repositories, install dependencies, and clean cache
+RUN apt-get update && \
+  apt-get install -y \
+  ffmpeg \
+  imagemagick \
+  webp && \
+  apt-get upgrade -y && \
+  rm -rf /var/lib/apt/lists/*
 
-# Set working directory
+# Set the working directory
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy package.json first
+COPY package.json ./ 
 
-# Install dependencies
-RUN npm install && npm cache clean --force
-RUN npm install -g pm2
+# Copy package-lock.json if available
+COPY package-lock.json* ./ 
 
-# Copy application code
-COPY . .
+# Install Node.js dependencies
+RUN npm install
 
-# Set environment
-ENV NODE_ENV production
+# Copy all files to the container
+COPY . . 
 
-# Run command
-CMD ["npm", "run", "start"]
+# Expose port 5000 for your app
+EXPOSE 5000
+
+# Copy the start script and make it executable
+COPY start.sh /app/start.sh
+RUN chmod +x /app/start.sh
+
+# Run the start script
+CMD ["/app/start.sh"]
